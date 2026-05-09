@@ -1,15 +1,26 @@
+# Gray matter volume differences between HS vs low schizotypy
+from nilearn import image
+from nilearn import plotting
+import nibabel as nib
 import numpy as np
 
+def difference_map (merged_img):
+    data = merged_img.get_fdata()  # the 4D file
+    hs_group = data[:,:,:,:69]     # first 69 = high schizotypy
+    ls_group = data[:,:,:,69:]     # last 72 = low schizotypy
+    mean_hs = np.mean(hs_group, axis=3)
+    mean_ls = np.mean(ls_group, axis=3)
+    diff_map = mean_hs - mean_ls  # where do brains differ
+    return diff_map
 
-def analyze_brain(img):
-    data = img.get_fdata()
-    print(f"Image shape: {data.shape}")
-    print(f"Affine matrix:\n{img.affine}")
-    print(f"Voxel intensity stats — mean: {np.mean(data):.2f}, max: {np.max(data):.2f}, min: {np.min(data):.2f}")
+def main():
+    merged_img = image.load_img("/Users/eternaiyears/PycharmProjects/mri1/ds007694/GRACE_all_T1w_merged.nii")
+    diff_map = difference_map(merged_img) # captures result
+    diff_img = nib.Nifti1Image(diff_map, merged_img.affine)
+    plotting.plot_stat_map(
+        diff_img, title = "High Schizotypical vs Low Schizotypical Brain Difference", colorbar= True, draw_cross = False, threshold = 10
+    )
+    plotting.show()
 
-    # if functional (4D), print basic time series info for voxel at center
-    if data.ndim == 4:
-        center = tuple(s // 2 for s in data.shape[:3])
-        ts = data[center[0], center[1], center[2], :]
-        print(f"Center voxel time series length: {len(ts)}")
-        print(f"First 5 timepoints: {ts[:5]}")
+if __name__ == "__main__":
+    main()
